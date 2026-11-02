@@ -2,6 +2,7 @@ name: Release
 
 on:
   push:
+    branches: ["**"]
     tags: ["v*"]
   workflow_dispatch:
 
@@ -44,7 +45,7 @@ jobs:
             fi
             echo "name=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
           else
-            echo "name=v${crate_version}-dev" >> "$GITHUB_OUTPUT"
+            echo "name=v${crate_version}-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build (static musl binary)
@@ -58,7 +59,6 @@ jobs:
           strip "$name/todo" || true
           tar czf "$name.tar.gz" "$name"
           sha256sum "$name.tar.gz" > "$name.tar.gz.sha256"
-          # Smoke test (only possible for the runner's own architecture).
           "$name/todo" --version
 
       - uses: actions/upload-artifact@v4
@@ -72,7 +72,7 @@ jobs:
   release:
     name: Publish release
     needs: build
-    if: github.ref_type == 'tag'
+    if: always() && needs.build.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -82,10 +82,14 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - name: Create GitHub release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          gh release create "${GITHUB_REF_NAME}" dist/* \
-            --title "${GITHUB_REF_NAME}" --generate-notes
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('commit-{0}', github.sha) }}
+          target_commitish: ${{ github.sha }}
+          name: ${{ github.ref_type == 'tag' && github.ref_name || format('Build {0}', github.sha) }}
+          body: ${{ github.ref_type == 'tag' && 'Stable release.' || format('Automatic build for commit {0}.', github.sha) }}
+          prerelease: ${{ github.ref_type != 'tag' }}
+          make_latest: ${{ github.ref_type == 'tag' }}
+          files: dist/*
+          fail_on_unmatched_files: true
