@@ -2,7 +2,7 @@
 
 A small Rust command-line tool for Linux that creates to-do notes in the currently running Joplin Desktop application.
 
-```text
+```
 todo Buy milk
 ```
 
@@ -10,7 +10,7 @@ The complete command-line text becomes the title of a new, unfinished Joplin to-
 
 You can configure a default Joplin notebook once:
 
-```text
+```
 todo notebook set "Work/Tasks"
 ```
 
@@ -26,14 +26,14 @@ The program only connects to `127.0.0.1`.
 
 Joplin Data API documentation:
 
-<https://joplinapp.org/help/api/references/rest_api/>
+[https://joplinapp.org/help/api/references/rest_api/](https://joplinapp.org/help/api/references/rest_api/)
 
 ## Requirements
 
 - Linux
 - Joplin Desktop, running while the command is used
 - Joplin Web Clipper service enabled
-- Rust 1.70 or newer, including Cargo
+- Rust 1.70 or newer, including Cargo (only when building from source)
 
 Install Rust with your distribution's package manager or with rustup.
 
@@ -51,13 +51,13 @@ Joplin Desktop must be running whenever you create a to-do, list notebooks, or s
 
 The recommended location is:
 
-```text
+```
 ~/.config/joplin-todo/token
 ```
 
 Create it with:
 
-```bash
+```
 mkdir -p ~/.config/joplin-todo
 printf '%s\n' 'YOUR-JOPLIN-TOKEN' > ~/.config/joplin-todo/token
 chmod 600 ~/.config/joplin-todo/token
@@ -65,53 +65,82 @@ chmod 600 ~/.config/joplin-todo/token
 
 When `XDG_CONFIG_HOME` is set, the program uses:
 
-```text
+```
 $XDG_CONFIG_HOME/joplin-todo/token
 ```
 
 Alternatively, set an environment variable:
 
-```bash
+```
 export JOPLIN_TOKEN='YOUR-JOPLIN-TOKEN'
 ```
 
 `JOPLIN_TOKEN` takes precedence over the token file.
 
-## 3. Build and install
+## 3. Install
+
+### Option A: pre-built binary (no Rust needed)
+
+Every tagged release on GitHub contains a statically linked binary for
+`x86_64` and `aarch64`. It runs on any Linux distribution, including
+immutable Fedora variants (Silverblue, Kinoite, Bazzite, ...), and does not
+need Cargo, a toolbox or layered packages:
+
+```
+VERSION=v0.2.1
+ARCH="$(uname -m)"
+NAME="joplin-todo-$VERSION-$ARCH-linux"
+BASE="https://github.com/ada-h00k/joplin-todo/releases/download/$VERSION"
+curl -fLO "$BASE/$NAME.tar.gz"
+curl -fLO "$BASE/$NAME.tar.gz.sha256"
+sha256sum -c "$NAME.tar.gz.sha256"
+tar xzf "$NAME.tar.gz"
+install -Dm755 "$NAME/todo" ~/.local/bin/todo
+```
+
+`~/.local/bin` is in `PATH` by default on Fedora. To uninstall, run
+`rm ~/.local/bin/todo`.
+
+To publish a new release, bump `version` in `Cargo.toml`, commit, and push a
+matching tag (`git tag v0.2.2 && git push origin v0.2.2`). The workflow in
+`.github/workflows/release.yml` builds the binaries and attaches them to the
+release.
+
+### Option B: build from source
 
 From the project directory:
 
-```bash
+```
 cargo install --path .
 ```
 
 Or use the included installer:
 
-```bash
+```
 ./install.sh
 ```
 
 Cargo normally installs the executable as:
 
-```text
+```
 ~/.cargo/bin/todo
 ```
 
 Make sure that `~/.cargo/bin` is in your `PATH`. For Bash, add this to `~/.bashrc` when necessary:
 
-```bash
+```
 export PATH="$HOME/.cargo/bin:$PATH"
 ```
 
 Then reload the shell:
 
-```bash
+```
 source ~/.bashrc
 ```
 
 ## Creating to-dos
 
-```bash
+```
 todo Buy milk
 todo Prepare the documents for Monday
 todo "Call Alex: discuss the proposal"
@@ -121,13 +150,13 @@ todo "Call Alex: discuss the proposal"
 
 ### List available notebooks
 
-```bash
+```
 todo notebook list
 ```
 
 Nested notebooks are displayed as paths:
 
-```text
+```
 Available notebooks:
   Personal
   Work
@@ -139,7 +168,7 @@ Available notebooks:
 
 Use either a unique notebook name or its full path:
 
-```bash
+```
 todo notebook set Tasks
 todo notebook set "Work/Tasks"
 ```
@@ -148,13 +177,13 @@ Using the full path is recommended when multiple notebooks have the same name. A
 
 The selected notebook ID and its displayed path are stored in:
 
-```text
+```
 ~/.config/joplin-todo/config.json
 ```
 
 Or, when `XDG_CONFIG_HOME` is set:
 
-```text
+```
 $XDG_CONFIG_HOME/joplin-todo/config.json
 ```
 
@@ -162,20 +191,20 @@ The configuration file does not contain the Joplin API token.
 
 ### Show the current default
 
-```bash
+```
 todo notebook show
 ```
 
 Example:
 
-```text
+```
 Default notebook: Work/Tasks
 Notebook ID: 0123456789abcdef0123456789abcdef
 ```
 
 ### Clear the default
 
-```bash
+```
 todo notebook clear
 ```
 
@@ -187,7 +216,7 @@ Joplin identifies the configured notebook by ID, so renaming a notebook does not
 
 If the notebook is deleted, select another notebook or clear the setting:
 
-```bash
+```
 todo notebook set "Another Notebook"
 # or
 todo notebook clear
@@ -197,46 +226,51 @@ todo notebook clear
 
 Show help:
 
-```bash
+```
 todo --help
 ```
 
 Show the installed version:
 
-```bash
+```
 todo --version
 ```
 
 ## Updating
 
-After changing or updating the source code, reinstall it with:
+Binary install: repeat the steps from Option A with the new version.
 
-```bash
+Source install: after changing or updating the source code, reinstall it with:
+
+```
 cargo install --path . --force
 ```
 
 ## Uninstalling
 
-```bash
+Binary install:
+
+```
+rm ~/.local/bin/todo
+```
+
+Source install:
+
+```
 cargo uninstall joplin-todo
 ```
 
 The token and notebook configuration are not removed automatically. Remove them separately when no longer needed:
 
-```bash
+```
 rm -rf ~/.config/joplin-todo
 ```
 
 ## Troubleshooting
 
-
 ### Invalid type: map, expected a sequence
 
-This error was present in version `0.2.0`. Joplin returns collection endpoints as an object containing an `items` array. Upgrade to version `0.2.1` or newer, then reinstall:
-
-```bash
-cargo install --path . --force
-```
+This error was present in version `0.2.0`. Joplin returns collection endpoints as an object containing an `items` array. Upgrade to version `0.2.1` or newer and reinstall.
 
 ### Could not find a running Joplin Data API
 
@@ -254,7 +288,7 @@ Copy the current token again from **Tools > Options > Web Clipper**, then update
 
 Run:
 
-```bash
+```
 todo notebook list
 ```
 
@@ -264,17 +298,17 @@ Then copy the exact notebook name or full path into `todo notebook set`.
 
 Use the full path printed in the error message:
 
-```bash
+```
 todo notebook set "Work/Tasks"
 ```
 
 ### Command not found
 
-Check that Cargo's binary directory is in your `PATH`:
+Check that the install directory is in your `PATH`:
 
-```bash
+```
 echo "$PATH"
-ls -l ~/.cargo/bin/todo
+ls -l ~/.local/bin/todo ~/.cargo/bin/todo
 ```
 
 ## Security notes
