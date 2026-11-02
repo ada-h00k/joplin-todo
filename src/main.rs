@@ -4,14 +4,7 @@
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashSet,
-    env,
-    error::Error,
-    fmt,
-    fs,
-    path::PathBuf,
-    process,
-    time::Duration,
+    collections::HashSet, env, error::Error, fmt, fs, path::PathBuf, process, time::Duration,
 };
 
 const FIRST_JOPLIN_PORT: u16 = 41184;
@@ -250,12 +243,7 @@ fn connect_to_joplin() -> Result<(Client, u16, String), Box<dyn Error>> {
     Ok((client, port, token))
 }
 
-fn create_todo(
-    client: &Client,
-    port: u16,
-    token: &str,
-    title: &str,
-) -> Result<(), Box<dyn Error>> {
+fn create_todo(client: &Client, port: u16, token: &str, title: &str) -> Result<(), Box<dyn Error>> {
     let config = load_config()?;
     let payload = NewTodo {
         title,
@@ -527,9 +515,9 @@ fn load_config() -> Result<Config, CliError> {
 
 fn save_config(config: &Config) -> Result<(), CliError> {
     let path = config_file_path()?;
-    let directory = path.parent().ok_or_else(|| {
-        CliError("Could not determine the configuration directory.".to_owned())
-    })?;
+    let directory = path
+        .parent()
+        .ok_or_else(|| CliError("Could not determine the configuration directory.".to_owned()))?;
 
     fs::create_dir_all(directory).map_err(|error| {
         CliError(format!(
@@ -538,9 +526,8 @@ fn save_config(config: &Config) -> Result<(), CliError> {
         ))
     })?;
 
-    let mut content = serde_json::to_string_pretty(config).map_err(|error| {
-        CliError(format!("Could not serialize the configuration: {error}"))
-    })?;
+    let mut content = serde_json::to_string_pretty(config)
+        .map_err(|error| CliError(format!("Could not serialize the configuration: {error}")))?;
     content.push('\n');
 
     let temporary_path = path.with_extension(format!("json.tmp.{}", process::id()));
@@ -616,8 +603,7 @@ fn application_config_directory() -> Result<PathBuf, CliError> {
         _ => {
             let home = env::var_os("HOME").ok_or_else(|| {
                 CliError(
-                    "Neither XDG_CONFIG_HOME nor HOME is set. Set JOPLIN_TOKEN instead."
-                        .to_owned(),
+                    "Neither XDG_CONFIG_HOME nor HOME is set. Set JOPLIN_TOKEN instead.".to_owned(),
                 )
             })?;
 
@@ -637,8 +623,7 @@ fn config_file_path() -> Result<PathBuf, CliError> {
 }
 
 fn find_joplin_port(client: &Client) -> Option<u16> {
-    (FIRST_JOPLIN_PORT..=LAST_JOPLIN_PORT)
-        .find(|port| is_joplin_port(client, *port))
+    (FIRST_JOPLIN_PORT..=LAST_JOPLIN_PORT).find(|port| is_joplin_port(client, *port))
 }
 
 fn is_joplin_port(client: &Client, port: u16) -> bool {
